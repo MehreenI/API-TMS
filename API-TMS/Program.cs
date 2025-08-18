@@ -11,7 +11,10 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add services to the container.
+
 builder.Services.AddControllers();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(c =>
@@ -25,7 +28,7 @@ builder.Services.AddSwaggerGen(c =>
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
-    });
+});
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -59,6 +62,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
+builder.Services.AddTransient<IMailService, MailService>();
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
 var key = Encoding.ASCII.GetBytes(jwtSettings?.SecretKey ?? "default-secret-key");
@@ -100,6 +104,7 @@ builder.Services.AddHostedService<DeadlineNotificationService>();
 
 var app = builder.Build();
 
+// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

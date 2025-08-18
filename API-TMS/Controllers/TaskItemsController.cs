@@ -4,6 +4,7 @@ using API_TMS.Repository.Interface;
 using API_TMS.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Globalization;
 
 namespace API_TMS.Controllers
 {
@@ -39,10 +40,11 @@ namespace API_TMS.Controllers
         {
             try
             {
-                var tasks = await _taskRepository.GetFilteredAsync(assignedUserId, priority, status, deadline);
-                var response = tasks.Select(MapToDto);
-                return Ok(response);
-            }
+            var tasks = await _taskRepository.GetFilteredAsync(assignedUserId, priority, status, deadline);
+
+            var response = tasks.Select(MapToDto);
+            return Ok(response);
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving filtered tasks");
@@ -53,6 +55,7 @@ namespace API_TMS.Controllers
         [HttpGet("my-tasks")]
         [Authorize(Policy = "UserOrAdmin")]
         public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetMyTasks(
+            int userId,
             [FromQuery] string? priority,
             [FromQuery] string? status,
             [FromQuery] DateTime? deadline)
@@ -62,18 +65,18 @@ namespace API_TMS.Controllers
                 var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
                 var tasks = await _taskRepository.GetByAssignedUserAsync(currentUserId);
 
-                if (!string.IsNullOrEmpty(priority) && Enum.TryParse<TaskPriority>(priority, true, out var parsedPriority))
+            if (!string.IsNullOrEmpty(priority) && Enum.TryParse<TaskPriority>(priority, true, out var parsedPriority))
                     tasks = tasks.Where(t => t.Priority == parsedPriority).ToList();
 
-                if (!string.IsNullOrEmpty(status) && Enum.TryParse<TStatus>(status, true, out var parsedStatus))
+            if (!string.IsNullOrEmpty(status) && Enum.TryParse<TStatus>(status, true, out var parsedStatus))
                     tasks = tasks.Where(t => t.Status == parsedStatus).ToList();
 
-                if (deadline.HasValue)
+            if (deadline.HasValue)
                     tasks = tasks.Where(t => t.Deadline.Date == deadline.Value.Date).ToList();
 
-                var response = tasks.Select(MapToDto);
-                return Ok(response);
-            }
+            var response = tasks.Select(MapToDto);
+            return Ok(response);
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving user tasks");
@@ -87,9 +90,9 @@ namespace API_TMS.Controllers
         {
             try
             {
-                var task = await _taskRepository.GetByIdAsync(id);
-                if (task == null)
-                    return NotFound("Task not found");
+            var task = await _taskRepository.GetByIdAsync(id);
+            if (task == null)
+                return NotFound("Task not found");
 
                 var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
                 var currentUserRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
@@ -97,8 +100,8 @@ namespace API_TMS.Controllers
                 if (currentUserRole != "Admin" && task.AssignedUserId != currentUserId)
                     return Forbid();
 
-                return Ok(MapToDto(task));
-            }
+            return Ok(MapToDto(task));
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving task with ID: {TaskId}", id);
@@ -112,8 +115,8 @@ namespace API_TMS.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
                 if (request.AssignedUserId.HasValue)
                 {
@@ -122,18 +125,18 @@ namespace API_TMS.Controllers
                         return BadRequest("Assigned user not found");
                 }
 
-                var task = new TaskItem
-                {
-                    Title = request.Title,
-                    Description = request.Description,
-                    Deadline = request.Deadline,
+            var task = new TaskItem
+            {
+                Title = request.Title,
+                Description = request.Description,
+                Deadline = request.Deadline,
                     Priority = request.Priority,
                     Status = TStatus.ToDo,
                     AssignedUserId = request.AssignedUserId,
                     CreatedAt = DateTime.UtcNow
-                };
+            };
 
-                var createdTask = await _taskRepository.CreateAsync(task);
+            var createdTask = await _taskRepository.CreateAsync(task);
                 
                 try
                 {
@@ -151,8 +154,8 @@ namespace API_TMS.Controllers
                     _logger.LogWarning(ex, "Failed to send task assignment notification for task {TaskId}", createdTask.Id);
                 }
                 
-                return CreatedAtAction(nameof(GetById), new { id = createdTask.Id }, MapToDto(createdTask));
-            }
+            return CreatedAtAction(nameof(GetById), new { id = createdTask.Id }, MapToDto(createdTask));
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating task with title: {Title}", request.Title);
@@ -166,12 +169,12 @@ namespace API_TMS.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-                var existingTask = await _taskRepository.GetByIdAsync(id);
-                if (existingTask == null)
-                    return NotFound("Task not found");
+            var existingTask = await _taskRepository.GetByIdAsync(id);
+            if (existingTask == null)
+                return NotFound("Task not found");
 
                 if (request.AssignedUserId.HasValue)
                 {
@@ -180,17 +183,17 @@ namespace API_TMS.Controllers
                         return BadRequest("Assigned user not found");
                 }
 
-                existingTask.Title = request.Title ?? existingTask.Title;
-                existingTask.Description = request.Description ?? existingTask.Description;
-                existingTask.Deadline = request.Deadline ?? existingTask.Deadline;
-                existingTask.Priority = request.Priority ?? existingTask.Priority;
-                existingTask.Status = request.Status ?? existingTask.Status;
-                existingTask.AssignedUserId = request.AssignedUserId ?? existingTask.AssignedUserId;
+            existingTask.Title = request.Title ?? existingTask.Title;
+            existingTask.Description = request.Description ?? existingTask.Description;
+            existingTask.Deadline = request.Deadline ?? existingTask.Deadline;
+            existingTask.Priority = request.Priority ?? existingTask.Priority;
+            existingTask.Status = request.Status ?? existingTask.Status;
+            existingTask.AssignedUserId = request.AssignedUserId ?? existingTask.AssignedUserId;
                 existingTask.UpdatedAt = DateTime.UtcNow;
 
-                await _taskRepository.UpdateAsync(existingTask);
-                return NoContent();
-            }
+            await _taskRepository.UpdateAsync(existingTask);
+            return NoContent();
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating task with ID: {TaskId}", id);
@@ -204,12 +207,12 @@ namespace API_TMS.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-                var existingTask = await _taskRepository.GetByIdAsync(id);
-                if (existingTask == null)
-                    return NotFound("Task not found");
+            var existingTask = await _taskRepository.GetByIdAsync(id);
+            if (existingTask == null)
+                return NotFound("Task not found");
 
                 var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
                 var currentUserRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
@@ -221,8 +224,8 @@ namespace API_TMS.Controllers
                 existingTask.UpdatedAt = DateTime.UtcNow;
 
                 await _taskRepository.UpdateAsync(existingTask);
-                return NoContent();
-            }
+            return NoContent();
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating status for task ID: {TaskId}", id);
@@ -236,12 +239,12 @@ namespace API_TMS.Controllers
         {
             try
             {
-                var result = await _taskRepository.DeleteAsync(id);
-                if (!result)
-                    return NotFound("Task not found");
+            var result = await _taskRepository.DeleteAsync(id);
+            if (!result)
+                return NotFound("Task not found");
 
-                return NoContent();
-            }
+            return NoContent();
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting task with ID: {TaskId}", id);
@@ -255,13 +258,14 @@ namespace API_TMS.Controllers
         {
             try
             {
-                var tasks = await _taskRepository.GetDueSoonAsync(hours);
-                var response = tasks.Select(MapToDto).ToList();
+            var tasks = await _taskRepository.GetDueSoonAsync(hours);
+            var response = tasks.Select(MapToDto).ToList();
 
-                response.ForEach(r => r.IsDueSoon = true);
+            // force IsDueSoon = true since repo already filters
+            response.ForEach(r => r.IsDueSoon = true);
 
-                return Ok(response);
-            }
+            return Ok(response);
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving tasks due soon within {Hours} hours", hours);
@@ -323,6 +327,6 @@ namespace API_TMS.Controllers
                 UpdatedAt = task.UpdatedAt,
                 IsDueSoon = task.Deadline <= DateTime.UtcNow.AddHours(24) && task.Status != TStatus.Done
             };
-        }
     }
+}
 }

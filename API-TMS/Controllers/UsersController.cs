@@ -36,9 +36,9 @@ namespace API_TMS.Controllers
         {
             try
             {
-                var users = await _userRepository.GetAllAsync();
-                return Ok(users);
-            }
+            var users = await _userRepository.GetAllAsync();
+            return Ok(users);
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving all users");
@@ -58,7 +58,7 @@ namespace API_TMS.Controllers
                 if (currentUserRole != "Admin" && currentUserId != id)
                     return Forbid();
 
-                var user = await _userRepository.GetByIdAsync(id);
+            var user = await _userRepository.GetByIdAsync(id);
                 if (user == null)
                     return NotFound("User not found");
 
@@ -76,7 +76,7 @@ namespace API_TMS.Controllers
                 };
 
                 return Ok(userDto);
-            }
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving user with ID: {UserId}", id);
@@ -96,31 +96,33 @@ namespace API_TMS.Controllers
                 if (await _userRepository.EmailExistsAsync(request.Email))
                     return BadRequest("Email already exists");
 
-                var tempPassword = GenerateRandomPassword(10);
+            var tempPassword = GenerateRandomPassword(10);
                 var hashedPassword = BCrypt.Net.BCrypt.HashPassword(tempPassword);
 
-                var user = new User
-                {
-                    FirstName = request.FirstName,
-                    LastName = request.LastName,
-                    Email = request.Email,
-                    PhoneNumber = request.PhoneNumber,
+            var user = new User
+            {
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Email = request.Email,
+                PhoneNumber = request.PhoneNumber,
                     Password = hashedPassword,
-                    Role = string.IsNullOrWhiteSpace(request.Role) ? "User" : request.Role,
+                Role = string.IsNullOrWhiteSpace(request.Role) ? "User" : request.Role,
                     ProfileImagePath = request.ProfileImagePath,
                     CreatedAt = DateTime.UtcNow
-                };
+            };
 
-                var createdUser = await _userRepository.CreateAsync(user);
+            var createdUser = await _userRepository.CreateAsync(user);
 
-                try
-                {
+            // prepare welcome email
+            try
+            {
                     await _notificationService.SendWelcomeNotificationAsync(createdUser, tempPassword);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Failed to send welcome notification to {Email}", createdUser.Email);
-                }
+            }
+            catch { /* log but don’t fail */ }
 
                 var responseDto = new GetUserDto
                 {
@@ -136,7 +138,7 @@ namespace API_TMS.Controllers
                 };
 
                 return CreatedAtAction(nameof(GetById), new { id = createdUser.Id }, responseDto);
-            }
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating user with email: {Email}", request.Email);
@@ -159,7 +161,7 @@ namespace API_TMS.Controllers
                 if (currentUserRole != "Admin" && currentUserId != id)
                     return Forbid();
 
-                var user = await _userRepository.GetByIdAsync(id);
+            var user = await _userRepository.GetByIdAsync(id);
                 if (user == null)
                     return NotFound("User not found");
 
@@ -173,13 +175,16 @@ namespace API_TMS.Controllers
                 user.LastName = request.LastName ?? user.LastName;
                 user.Email = request.Email ?? user.Email;
                 user.PhoneNumber = request.PhoneNumber ?? user.PhoneNumber;
-                
-                if (currentUserRole == "Admin" && !string.IsNullOrEmpty(request.Role))
-                    user.Role = request.Role;
 
-                await _userRepository.UpdateAsync(user);
-                return NoContent();
-            }
+                if (currentUserRole == "Admin" && !string.IsNullOrEmpty(request.Role))
+            user.Role = request.Role;
+
+            if (!string.IsNullOrEmpty(request.Password))
+                user.Password = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+            await _userRepository.UpdateAsync(user);
+            return NoContent();
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating user with ID: {UserId}", id);
@@ -198,8 +203,8 @@ namespace API_TMS.Controllers
                     return NotFound("User not found");
 
                 await _userRepository.DeleteAsync(id);
-                return NoContent();
-            }
+            return NoContent();
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting user with ID: {UserId}", id);
@@ -222,23 +227,23 @@ namespace API_TMS.Controllers
                 if (currentUserRole != "Admin" && currentUserId != id)
                     return Forbid();
 
-                if (request.NewPassword != request.ConfirmNewPassword)
+            if (request.NewPassword != request.ConfirmNewPassword)
                     return BadRequest("Passwords do not match");
 
-                var user = await _userRepository.GetByIdAsync(id);
+            var user = await _userRepository.GetByIdAsync(id);
                 if (user == null)
                     return NotFound("User not found");
 
-                if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.Password))
+            if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.Password))
                     return BadRequest("Current password is incorrect");
 
                 var hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
                 await _userRepository.UpdatePasswordAsync(id, hashedPassword);
 
                 return Ok("Password changed successfully");
-            }
+        }
             catch (Exception ex)
-            {
+        {
                 _logger.LogError(ex, "Error changing password for user ID: {UserId}", id);
                 return StatusCode(500, "An error occurred while changing the password");
             }
@@ -250,6 +255,14 @@ namespace API_TMS.Controllers
             var random = new Random();
             return new string(Enumerable.Repeat(chars, length)
                 .Select(s => s[random.Next(s.Length)]).ToArray());
-        }
+    }
+    public interface IUserRepository
+    {
+        Task<User?> GetByIdAsync(int id);
+        Task<List<GetUserDto>> GetAllAsync();
+        Task<User> CreateAsync(User user);
+        Task<User?> UpdateAsync(User user);
+        Task<User> UpdatePasswordAsync(int userId, string newPassword);
+        Task DeleteAsync(int id); // Changed from void to Task
     }
 }
