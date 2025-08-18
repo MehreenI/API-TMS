@@ -21,9 +21,9 @@ namespace API_TMS.Repository
             try
             {
                 return await _context.TaskItems
-                    .Include(t => t.AssignedUser)
+                .Include(t => t.AssignedUser)
                     .FirstOrDefaultAsync(t => t.Id == id);
-            }
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving task with ID: {TaskId}", id);
@@ -36,10 +36,10 @@ namespace API_TMS.Repository
             try
             {
                 return await _context.TaskItems
-                    .Include(t => t.AssignedUser)
+                .Include(t => t.AssignedUser)
                     .OrderByDescending(t => t.CreatedAt)
-                    .ToListAsync();
-            }
+                .ToListAsync();
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving all tasks");
@@ -52,37 +52,54 @@ namespace API_TMS.Repository
             try
             {
                 return await _context.TaskItems
-                    .Include(t => t.AssignedUser)
+                .Include(t => t.AssignedUser)
                     .OrderByDescending(t => t.CreatedAt)
                     .ToListAsync();
-            }
+        }
             catch (Exception ex)
-            {
+        {
                 _logger.LogError(ex, "Error retrieving tasks with users");
                 throw;
-            }
+        }
+
+        public async Task<TaskItem> UpdateAsync(TaskItem task)
+        {
+            var existingTask = await _context.Tasks.FindAsync(task.Id);
+            if (existingTask == null)
+                throw new InvalidOperationException("Task not found");
+
+            existingTask.Title = task.Title;
+            existingTask.Description = task.Description;
+            existingTask.Deadline = task.Deadline;
+            existingTask.Priority = task.Priority;
+            existingTask.Status = task.Status;
+            existingTask.AssignedUserId = task.AssignedUserId;
+            existingTask.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return existingTask;
         }
 
         public async Task<List<TaskItem>> GetFilteredAsync(int? assignedUserId, string? priority, string? status, DateTime? deadline)
         {
             try
-            {
+        {
                 var query = _context.TaskItems.Include(t => t.AssignedUser).AsQueryable();
 
-                if (assignedUserId.HasValue)
-                    query = query.Where(t => t.AssignedUserId == assignedUserId.Value);
+            if (assignedUserId.HasValue)
+                query = query.Where(t => t.AssignedUserId == assignedUserId.Value);
 
-                if (!string.IsNullOrEmpty(priority) && Enum.TryParse<TaskPriority>(priority, true, out var parsedPriority))
-                    query = query.Where(t => t.Priority == parsedPriority);
+            if (!string.IsNullOrEmpty(priority) && Enum.TryParse<TaskPriority>(priority, true, out var parsedPriority))
+                query = query.Where(t => t.Priority == parsedPriority);
 
-                if (!string.IsNullOrEmpty(status) && Enum.TryParse<TStatus>(status, true, out var parsedStatus))
-                    query = query.Where(t => t.Status == parsedStatus);
+            if (!string.IsNullOrEmpty(status) && Enum.TryParse<TStatus>(status, true, out var parsedStatus))
+                query = query.Where(t => t.Status == parsedStatus);
 
-                if (deadline.HasValue)
-                    query = query.Where(t => t.Deadline.Date == deadline.Value.Date);
+            if (deadline.HasValue)
+                query = query.Where(t => t.Deadline.Date == deadline.Value.Date);
 
-                return await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
-            }
+            return await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error filtering tasks");
@@ -95,11 +112,11 @@ namespace API_TMS.Repository
             try
             {
                 return await _context.TaskItems
-                    .Include(t => t.AssignedUser)
+                .Include(t => t.AssignedUser)
                     .Where(t => t.AssignedUserId == userId)
                     .OrderByDescending(t => t.CreatedAt)
-                    .ToListAsync();
-            }
+                .ToListAsync();
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving tasks for user ID: {UserId}", userId);
@@ -113,11 +130,11 @@ namespace API_TMS.Repository
             {
                 var deadlineThreshold = DateTime.UtcNow.AddHours(hours);
                 return await _context.TaskItems
-                    .Include(t => t.AssignedUser)
+                .Include(t => t.AssignedUser)
                     .Where(t => t.Deadline <= deadlineThreshold && t.Status != TStatus.Done)
                     .OrderBy(t => t.Deadline)
-                    .ToListAsync();
-            }
+                .ToListAsync();
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving tasks due soon within {Hours} hours", hours);

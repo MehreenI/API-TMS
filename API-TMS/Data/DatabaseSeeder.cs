@@ -7,6 +7,7 @@ namespace API_TMS.Data
         public static async Task SeedAsync(AppDbContext context)
         {
             if (context.Users.Any())
+
                 return;
 
             var adminUser = new User

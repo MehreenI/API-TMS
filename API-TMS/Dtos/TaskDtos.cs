@@ -2,6 +2,7 @@
 
 namespace API_TMS.Dtos
 {
+    // ✅ DTO for creating a task
     public class TaskCreateDto
     {
         public required string Title { get; set; }
@@ -11,6 +12,7 @@ namespace API_TMS.Dtos
         public int? AssignedUserId { get; set; }
     }
 
+    // ✅ DTO for updating a task (partial updates allowed)
     public class TaskUpdateDto
     {
         public string? Title { get; set; }
@@ -21,11 +23,13 @@ namespace API_TMS.Dtos
         public int? AssignedUserId { get; set; }
     }
 
+    // ✅ DTO for updating only the status of a task
     public class TaskUpdateStatusDto
     {
         public required TStatus Status { get; set; }
     }
 
+    // ✅ DTO for returning a task response
     public class TaskResponseDto
     {
         public int Id { get; set; }
@@ -43,6 +47,7 @@ namespace API_TMS.Dtos
 
     public class DashboardStatsDto
     {
+        public string UserEmail { get; set; } = string.Empty;
         public int TotalTasks { get; set; }
         public int CompletedTasks { get; set; }
         public int InProgressTasks { get; set; }

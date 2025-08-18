@@ -24,7 +24,7 @@ namespace API_TMS.Repository
                 return await _context.Users
                     .Include(u => u.Tasks)
                     .FirstOrDefaultAsync(u => u.Id == id);
-            }
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving user with ID: {UserId}", id);
@@ -44,7 +44,7 @@ namespace API_TMS.Repository
             {
                 _logger.LogError(ex, "Error retrieving user with email: {Email}", email);
                 throw;
-            }
+        }
         }
 
         public async Task<List<GetUserDto>> GetAllAsync()
@@ -53,22 +53,22 @@ namespace API_TMS.Repository
             {
                 var users = await _context.Users
                     .Include(u => u.Tasks)
-                    .Select(u => new GetUserDto
-                    {
-                        Id = u.Id,
+                            .Select(u => new GetUserDto
+                            {
+                                Id = u.Id,
                         FirstName = u.FirstName,
                         LastName = u.LastName,
-                        Email = u.Email,
+                                Email = u.Email,
                         PhoneNumber = u.PhoneNumber,
-                        Role = u.Role,
+                                Role = u.Role,
                         CreatedAt = u.CreatedAt,
                         LastLogin = u.LastLogin,
-                        TaskCount = u.Tasks.Count
-                    })
-                    .ToListAsync();
+                                TaskCount = u.Tasks.Count
+                            })
+                            .ToListAsync();
 
                 return users;
-            }
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving all users");
@@ -94,13 +94,13 @@ namespace API_TMS.Repository
         public async Task<User?> UpdateAsync(User user)
         {
             try
-            {
+        {
                 var existingUser = await _context.Users.FindAsync(user.Id);
                 if (existingUser == null)
                     return null;
 
                 _context.Entry(existingUser).CurrentValues.SetValues(user);
-                await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
                 return existingUser;
             }
             catch (Exception ex)
@@ -113,15 +113,18 @@ namespace API_TMS.Repository
         public async Task<User> UpdatePasswordAsync(int userId, string newPassword)
         {
             try
-            {
+        {
                 var user = await _context.Users.FindAsync(userId);
-                if (user == null)
+            if (user == null)
                     throw new InvalidOperationException($"User with ID {userId} not found");
 
-                user.Password = newPassword;
-                await _context.SaveChangesAsync();
-                return user;
-            }
+            user.Password = newPassword;
+
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            return user;
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating password for user ID: {UserId}", userId);
