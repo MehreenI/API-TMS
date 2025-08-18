@@ -13,11 +13,11 @@ namespace API_TMS.Repository
         public async Task<EmailTemplate?> GetByTypeAsync(string emailType)
         {
             return await _db.EmailTemplates.AsNoTracking()
-                           .FirstOrDefaultAsync(t => t.TemaplteName == emailType);
+                           .FirstOrDefaultAsync(t => t.TemplateName == emailType);
         }
         public async Task<IEnumerable<EmailTemplate>> GetAllAsync()
         {
-            return await _db.EmailTemplates.AsNoTracking().ToListAsync();
+            return await _db.EmailTemplates.ToListAsync();
         }
 
         public async Task<EmailTemplate?> UpdateAsync(EmailTemplate emailTemplate)

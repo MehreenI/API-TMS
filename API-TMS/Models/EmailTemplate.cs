@@ -5,7 +5,7 @@ namespace API_TMS.Models
     public class EmailTemplate
     {
         public int Id { get; set; }
-        public required string TemaplteName { get; set; }
+        public required string TemplateName { get; set; }
         public required string FromAddress { get; set; }
 
         [Required(ErrorMessage = "Subject is required.")]

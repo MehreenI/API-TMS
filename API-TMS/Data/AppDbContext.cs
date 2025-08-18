@@ -58,7 +58,7 @@ namespace API_TMS.Data
             modelBuilder.Entity<EmailTemplate>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.TemaplteName).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.TemplateName).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Subject).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.Body).IsRequired();
             });

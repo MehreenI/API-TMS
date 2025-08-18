@@ -16,22 +16,21 @@ namespace API_TMS.Controllers
         private readonly ITaskItemRepository _taskRepository;
         private readonly IUserRepository _userRepository;
         private readonly INotificationService _notificationService;
-        private readonly ILogger<TaskItemsController> _logger;
 
         public TaskItemsController(
             ITaskItemRepository taskRepository,
             IUserRepository userRepository,
-            INotificationService notificationService,
-            ILogger<TaskItemsController> logger)
+            INotificationService notificationService
+         )
         {
             _taskRepository = taskRepository;
             _userRepository = userRepository;
             _notificationService = notificationService;
-            _logger = logger;
+
         }
 
         [HttpGet]
-        [Authorize(Policy = "AdminOnly")]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetAll(
             [FromQuery] int? assignedUserId,
             [FromQuery] string? priority,
@@ -47,45 +46,61 @@ namespace API_TMS.Controllers
         }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving filtered tasks");
                 return StatusCode(500, "An error occurred while retrieving tasks");
             }
         }
 
         [HttpGet("my-tasks")]
-        [Authorize(Policy = "UserOrAdmin")]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetMyTasks(
-            int userId,
             [FromQuery] string? priority,
             [FromQuery] string? status,
             [FromQuery] DateTime? deadline)
         {
             try
             {
-                var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+                var nameId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                int currentUserId = 0;
+                if (!string.IsNullOrEmpty(nameId))
+                {
+                    int.TryParse(nameId, out currentUserId);
+                }
+
+                if (currentUserId == 0)
+                {
+                    var email = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+                    if (!string.IsNullOrEmpty(email))
+                    {
+                        var me = await _userRepository.GetByEmailAsync(email);
+                        currentUserId = me?.Id ?? 0;
+                    }
+                }
+
+                if (currentUserId == 0)
+                    return Unauthorized();
+
                 var tasks = await _taskRepository.GetByAssignedUserAsync(currentUserId);
 
-            if (!string.IsNullOrEmpty(priority) && Enum.TryParse<TaskPriority>(priority, true, out var parsedPriority))
+                if (!string.IsNullOrEmpty(priority) && Enum.TryParse<TaskPriority>(priority, true, out var parsedPriority))
                     tasks = tasks.Where(t => t.Priority == parsedPriority).ToList();
 
-            if (!string.IsNullOrEmpty(status) && Enum.TryParse<TStatus>(status, true, out var parsedStatus))
+                if (!string.IsNullOrEmpty(status) && Enum.TryParse<TStatus>(status, true, out var parsedStatus))
                     tasks = tasks.Where(t => t.Status == parsedStatus).ToList();
 
-            if (deadline.HasValue)
+                if (deadline.HasValue)
                     tasks = tasks.Where(t => t.Deadline.Date == deadline.Value.Date).ToList();
 
-            var response = tasks.Select(MapToDto);
-            return Ok(response);
-        }
+                var response = tasks.Select(MapToDto);
+                return Ok(response);
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving user tasks");
                 return StatusCode(500, "An error occurred while retrieving your tasks");
             }
         }
 
         [HttpGet("{id:int}")]
-        [Authorize(Policy = "UserOrAdmin")]
+        [Authorize]
         public async Task<ActionResult<TaskResponseDto>> GetById(int id)
         {
             try
@@ -94,23 +109,17 @@ namespace API_TMS.Controllers
             if (task == null)
                 return NotFound("Task not found");
 
-                var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
-                var currentUserRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
-
-                if (currentUserRole != "Admin" && task.AssignedUserId != currentUserId)
-                    return Forbid();
-
+                
             return Ok(MapToDto(task));
         }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving task with ID: {TaskId}", id);
                 return StatusCode(500, "An error occurred while retrieving the task");
             }
         }
 
         [HttpPost]
-        [Authorize(Policy = "AdminOnly")]
+        [Authorize]
         public async Task<ActionResult<TaskResponseDto>> Create([FromBody] TaskCreateDto request)
         {
             try
@@ -151,20 +160,18 @@ namespace API_TMS.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to send task assignment notification for task {TaskId}", createdTask.Id);
                 }
                 
             return CreatedAtAction(nameof(GetById), new { id = createdTask.Id }, MapToDto(createdTask));
         }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating task with title: {Title}", request.Title);
                 return StatusCode(500, "An error occurred while creating the task");
             }
         }
 
         [HttpPut("{id:int}")]
-        [Authorize(Policy = "AdminOnly")]
+        [Authorize]
         public async Task<IActionResult> Update(int id, [FromBody] TaskUpdateDto request)
         {
             try
@@ -196,13 +203,12 @@ namespace API_TMS.Controllers
         }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating task with ID: {TaskId}", id);
                 return StatusCode(500, "An error occurred while updating the task");
             }
         }
 
         [HttpPatch("{id:int}/status")]
-        [Authorize(Policy = "UserOrAdmin")]
+        [Authorize]
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] TaskUpdateStatusDto request)
         {
             try
@@ -228,13 +234,12 @@ namespace API_TMS.Controllers
         }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating status for task ID: {TaskId}", id);
                 return StatusCode(500, "An error occurred while updating the task status");
             }
         }
 
         [HttpDelete("{id:int}")]
-        [Authorize(Policy = "AdminOnly")]
+        [Authorize]
         public async Task<IActionResult> Delete(int id)
         {
             try
@@ -247,13 +252,12 @@ namespace API_TMS.Controllers
         }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting task with ID: {TaskId}", id);
                 return StatusCode(500, "An error occurred while deleting the task");
             }
         }
 
         [HttpGet("due-soon")]
-        [Authorize(Policy = "UserOrAdmin")]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetDueSoon([FromQuery] int hours = 24)
         {
             try
@@ -268,13 +272,12 @@ namespace API_TMS.Controllers
         }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving tasks due soon within {Hours} hours", hours);
                 return StatusCode(500, "An error occurred while retrieving due soon tasks");
             }
         }
 
         [HttpGet("dashboard-stats")]
-        [Authorize(Policy = "UserOrAdmin")]
+        [Authorize]
         public async Task<ActionResult<DashboardStatsDto>> GetDashboardStats()
         {
             try
@@ -306,7 +309,6 @@ namespace API_TMS.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving dashboard statistics");
                 return StatusCode(500, "An error occurred while retrieving dashboard statistics");
             }
         }

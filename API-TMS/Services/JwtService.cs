@@ -1,11 +1,9 @@
+using API_TMS.Configuration;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using API_TMS.Configuration;
-using API_TMS.Dtos;
-using API_TMS.Models;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 
 namespace API_TMS.Services
 {
@@ -13,54 +11,56 @@ namespace API_TMS.Services
     {
         private readonly JwtSettings _jwtSettings;
 
-        public JwtService(IOptions<JwtSettings> jwtSettings)
+        public JwtService(IOptions<JwtSettings> options)
         {
-            _jwtSettings = jwtSettings.Value;
+            _jwtSettings = options.Value;
         }
 
-        public string GenerateToken(User user)
+        public string CreateToken(API_TMS.Models.User user)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_jwtSettings.SecretKey);
+            var jwtKey = _jwtSettings.SecretKey ?? throw new InvalidOperationException("JWT Key is not configured");
+            var jwtIssuer = _jwtSettings.Issuer ?? throw new InvalidOperationException("JWT Issuer is not configured");
+            var jwtAudience = _jwtSettings.Audience ?? throw new InvalidOperationException("JWT Audience is not configured");
 
-            var claims = new List<Claim>
+            var claims = new[]
             {
-                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new(ClaimTypes.Email, user.Email),
-                new(ClaimTypes.Name, user.FullName),
-                new(ClaimTypes.Role, user.Role)
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.Email),
+                new Claim(ClaimTypes.Role, user.Role)
             };
 
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddHours(_jwtSettings.ExpirationHours),
-                Issuer = _jwtSettings.Issuer,
-                Audience = _jwtSettings.Audience,
-                SigningCredentials = new SigningCredentials(
-                    new SymmetricSecurityKey(key),
-                    SecurityAlgorithms.HmacSha256Signature)
-            };
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+            var token = new JwtSecurityToken(
+                issuer: jwtIssuer,
+                audience: jwtAudience,
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(300),
+                signingCredentials: creds);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         public bool ValidateToken(string token)
         {
             try
             {
+                var jwtKey = _jwtSettings.SecretKey ?? throw new InvalidOperationException("JWT Key is not configured");
+                var jwtIssuer = _jwtSettings.Issuer ?? throw new InvalidOperationException("JWT Issuer is not configured");
+                var jwtAudience = _jwtSettings.Audience ?? throw new InvalidOperationException("JWT Audience is not configured");
+
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes(_jwtSettings.SecretKey);
+                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
 
                 tokenHandler.ValidateToken(token, new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    IssuerSigningKey = key,
                     ValidateIssuer = true,
-                    ValidIssuer = _jwtSettings.Issuer,
+                    ValidIssuer = jwtIssuer,
                     ValidateAudience = true,
-                    ValidAudience = _jwtSettings.Audience,
+                    ValidAudience = jwtAudience,
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
                 }, out _);
@@ -71,18 +71,6 @@ namespace API_TMS.Services
             {
                 return false;
             }
-        }
-
-        public AuthResponse CreateAuthResponse(User user, string token)
-        {
-            return new AuthResponse
-            {
-                Token = token,
-                UserId = user.Id,
-                Role = user.Role,
-                FullName = user.FullName,
-                ExpiresAtUtc = DateTime.UtcNow.AddHours(_jwtSettings.ExpirationHours)
-            };
         }
     }
 }

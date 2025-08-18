@@ -11,64 +11,44 @@ namespace API_TMS.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IUserRepository _userRepository;
-        private readonly IJwtService _jwtService;
-        private readonly ILogger<AuthController> _logger;
+        private readonly IJwtService _tokenService;
 
-        public AuthController(
-            IUserRepository userRepository,
-            IJwtService jwtService,
-            ILogger<AuthController> logger)
+        public AuthController(IUserRepository userRepository, IJwtService tokenService)
         {
             _userRepository = userRepository;
-            _jwtService = jwtService;
-            _logger = logger;
+            _tokenService = tokenService;
         }
 
         [HttpPost("login")]
         public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request)
         {
-            try
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var user = await _userRepository.GetByEmailAsync(request.Email);
+            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
+                return Unauthorized("Invalid email or password");
+
+            user.LastLogin = DateTime.UtcNow;
+            await _userRepository.UpdateAsync(user);
+
+            var token = _tokenService.CreateToken(user);
+
+            return Ok(new AuthResponse
             {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
-
-                var user = await _userRepository.GetByEmailAsync(request.Email);
-                if (user == null)
-                    return Unauthorized("Invalid email or password");
-
-                if (!BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
-                    return Unauthorized("Invalid email or password");
-
-                user.LastLogin = DateTime.UtcNow;
-                await _userRepository.UpdateAsync(user);
-
-                var token = _jwtService.GenerateToken(user);
-                var response = _jwtService.CreateAuthResponse(user, token);
-
-                _logger.LogInformation("User {Email} logged in successfully", user.Email);
-
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred during login for email: {Email}", request.Email);
-                return StatusCode(500, "An error occurred during login");
-            }
+                Token = token,
+                UserId = user.Id,
+                FullName = user.FullName,
+                Role = user.Role,
+                ExpiresAtUtc = DateTime.Now.AddMinutes(30)
+            });
         }
 
         [HttpPost("validate-token")]
         public ActionResult ValidateToken([FromBody] string token)
         {
-            try
-            {
-                var isValid = _jwtService.ValidateToken(token);
-                return Ok(new { IsValid = isValid });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred during token validation");
-                return StatusCode(500, "An error occurred during token validation");
-            }
+            var isValid = _tokenService.ValidateToken(token);
+            return Ok(new { IsValid = isValid });
         }
     }
 }

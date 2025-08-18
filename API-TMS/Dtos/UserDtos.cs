@@ -44,6 +44,8 @@ namespace API_TMS.Dtos
         public DateTime? DateOfBirth { get; set; }
 
         public string? ProfileImagePath { get; set; }
+
+        public string? Password { get; set; }
     }
 
     public class ProfileDto
@@ -71,4 +73,15 @@ namespace API_TMS.Dtos
         public DateTime? LastLogin { get; set; }
         public int TaskCount { get; set; }
     }
+
+    public class CurrentUserDto
+    {
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string PhoneNumber { get; set; } = "";
+        public DateTime? DateOfBirth { get; set; }
+        public string? ProfileImagePath { get; set; }
+    }
+
 }

@@ -13,7 +13,7 @@ namespace API_TMS.Services
             _logger = logger;
         }
 
-        public async Task SendTaskDeadlineNotificationAsync(TaskItem task)
+        public async Task SendTaskDeadlineNotificationAsync(TaskItem task, string notificationType = "default")
         {
             try
             {
@@ -21,26 +21,30 @@ namespace API_TMS.Services
 
                 var timeRemaining = task.Deadline - DateTime.UtcNow;
                 var hoursRemaining = (int)timeRemaining.TotalHours;
+                var isOverdue = timeRemaining < TimeSpan.Zero;
+
+                // Determine notification style based on type
+                var (subjectPrefix, backgroundColor, borderColor, emoji) = GetNotificationStyle(notificationType, isOverdue, hoursRemaining);
 
                 var mailData = new Mail
                 {
                     EmailToId = task.AssignedUser.Email,
                     EmailToName = task.AssignedUser.FullName,
-                    EmailSubject = $"Task Deadline Alert: {task.Title}",
+                    EmailSubject = $"{subjectPrefix}: {task.Title}",
                     EmailBody = $@"
                         <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                            <h2 style='color: #d32f2f;'>⚠️ Task Deadline Alert</h2>
+                            <h2 style='color: {borderColor};'>{emoji} Task Deadline Alert</h2>
                             <p>Hello {task.AssignedUser.FullName},</p>
                             <p>This is a reminder that your task <strong>'{task.Title}'</strong> is due soon.</p>
                             
-                            <div style='background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;'>
+                            <div style='background-color: {backgroundColor}; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid {borderColor};'>
                                 <h3>Task Details:</h3>
                                 <p><strong>Title:</strong> {task.Title}</p>
                                 <p><strong>Description:</strong> {task.Description}</p>
                                 <p><strong>Priority:</strong> {task.Priority}</p>
                                 <p><strong>Status:</strong> {task.Status}</p>
                                 <p><strong>Deadline:</strong> {task.Deadline:MMM dd, yyyy 'at' HH:mm}</p>
-                                <p><strong>Time Remaining:</strong> {hoursRemaining} hours</p>
+                                <p><strong>Time Remaining:</strong> {(isOverdue ? "OVERDUE" : $"{hoursRemaining} hours")}</p>
                             </div>
                             
                             <p>Please ensure this task is completed before the deadline.</p>
@@ -49,13 +53,44 @@ namespace API_TMS.Services
                 };
 
                 await _mailService.SendMail(mailData);
-                _logger.LogInformation("Deadline notification sent for task {TaskId} to {Email}", 
-                    task.Id, task.AssignedUser.Email);
+                _logger.LogInformation("Deadline notification ({Type}) sent for task {TaskId} to {Email}", 
+                    notificationType, task.Id, task.AssignedUser.Email);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error sending deadline notification for task {TaskId}", task.Id);
             }
+        }
+
+        private (string subject, string backgroundColor, string borderColor, string emoji) GetNotificationStyle(string notificationType, bool isOverdue, int hoursRemaining)
+        {
+            return notificationType switch
+            {
+                "critical" => (
+                    $"🚨 CRITICAL: Task is overdue!",
+                    "#ffebee",
+                    "#d32f2f",
+                    "🚨"
+                ),
+                "urgent" => (
+                    $"⚠️ URGENT: Task due in {hoursRemaining} hours!",
+                    "#fff3e0",
+                    "#f57c00",
+                    "⚠️"
+                ),
+                "early" => (
+                    $"📅 Reminder: Task due in {hoursRemaining} hours",
+                    "#e8f5e8",
+                    "#388e3c",
+                    "📅"
+                ),
+                _ => (
+                    $"Task Deadline Alert",
+                    "#f5f5f5",
+                    "#757575",
+                    "📋"
+                )
+            };
         }
 
         public async Task SendTaskAssignmentNotificationAsync(TaskItem task)

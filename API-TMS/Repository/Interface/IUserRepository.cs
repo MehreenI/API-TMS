@@ -1,5 +1,4 @@
-﻿using API_TMS.Dtos;
-using API_TMS.Models;
+﻿using API_TMS.Models;
 
 namespace API_TMS.Repository.Interface
 {
@@ -7,7 +6,7 @@ namespace API_TMS.Repository.Interface
     {
         Task<User?> GetByIdAsync(int id);
         Task<User?> GetByEmailAsync(string email);
-        Task<List<GetUserDto>> GetAllAsync();
+        Task<List<User>> GetAllAsync();
         Task<User> CreateAsync(User user);
         Task<User?> UpdateAsync(User user);
         Task<User> UpdatePasswordAsync(int userId, string newPassword);

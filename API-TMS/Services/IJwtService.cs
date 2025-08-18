@@ -5,8 +5,7 @@ namespace API_TMS.Services
 {
     public interface IJwtService
     {
-        string GenerateToken(User user);
+        string CreateToken(User user);
         bool ValidateToken(string token);
-        AuthResponse CreateAuthResponse(User user, string token);
     }
 }

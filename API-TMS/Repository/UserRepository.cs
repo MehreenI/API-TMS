@@ -3,18 +3,17 @@ using API_TMS.Dtos;
 using API_TMS.Models;
 using API_TMS.Repository.Interface;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace API_TMS.Repository
 {
     public class UserRepository : IUserRepository
     {
         private readonly AppDbContext _context;
-        private readonly ILogger<UserRepository> _logger;
 
         public UserRepository(AppDbContext context, ILogger<UserRepository> logger)
         {
             _context = context;
-            _logger = logger;
         }
 
         public async Task<User?> GetByIdAsync(int id)
@@ -24,10 +23,9 @@ namespace API_TMS.Repository
                 return await _context.Users
                     .Include(u => u.Tasks)
                     .FirstOrDefaultAsync(u => u.Id == id);
-        }
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving user with ID: {UserId}", id);
                 throw;
             }
         }
@@ -42,36 +40,20 @@ namespace API_TMS.Repository
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving user with email: {Email}", email);
                 throw;
-        }
+            }
         }
 
-        public async Task<List<GetUserDto>> GetAllAsync()
+        public async Task<List<User>> GetAllAsync()
         {
             try
             {
-                var users = await _context.Users
+                return await _context.Users
                     .Include(u => u.Tasks)
-                            .Select(u => new GetUserDto
-                            {
-                                Id = u.Id,
-                        FirstName = u.FirstName,
-                        LastName = u.LastName,
-                                Email = u.Email,
-                        PhoneNumber = u.PhoneNumber,
-                                Role = u.Role,
-                        CreatedAt = u.CreatedAt,
-                        LastLogin = u.LastLogin,
-                                TaskCount = u.Tasks.Count
-                            })
-                            .ToListAsync();
-
-                return users;
-        }
-            catch (Exception ex)
+                    .ToListAsync();
+            }
+            catch (Exception)
             {
-                _logger.LogError(ex, "Error retrieving all users");
                 throw;
             }
         }
@@ -86,7 +68,6 @@ namespace API_TMS.Repository
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating user with email: {Email}", user.Email);
                 throw;
             }
         }
@@ -94,18 +75,17 @@ namespace API_TMS.Repository
         public async Task<User?> UpdateAsync(User user)
         {
             try
-        {
+            {
                 var existingUser = await _context.Users.FindAsync(user.Id);
                 if (existingUser == null)
                     return null;
 
                 _context.Entry(existingUser).CurrentValues.SetValues(user);
-            await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
                 return existingUser;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating user with ID: {UserId}", user.Id);
                 throw;
             }
         }
@@ -113,21 +93,20 @@ namespace API_TMS.Repository
         public async Task<User> UpdatePasswordAsync(int userId, string newPassword)
         {
             try
-        {
+            {
                 var user = await _context.Users.FindAsync(userId);
-            if (user == null)
+                if (user == null)
                     throw new InvalidOperationException($"User with ID {userId} not found");
 
-            user.Password = newPassword;
+                user.Password = newPassword;
 
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
 
-            return user;
-        }
+                return user;
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating password for user ID: {UserId}", userId);
                 throw;
             }
         }
@@ -145,7 +124,6 @@ namespace API_TMS.Repository
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting user with ID: {UserId}", id);
                 throw;
             }
         }
@@ -158,7 +136,6 @@ namespace API_TMS.Repository
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking if email exists: {Email}", email);
                 throw;
             }
         }

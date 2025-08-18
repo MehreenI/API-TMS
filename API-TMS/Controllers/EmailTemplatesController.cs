@@ -1,9 +1,13 @@
 ﻿using API_TMS.Models;
 using API_TMS.Repository.Interface;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API_TMS.Controllers
 {
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize]
     public class EmailTemplatesController : ControllerBase
     {
         private readonly IEmailTemplateRepository emailTemplateRepository;
@@ -21,9 +25,9 @@ namespace API_TMS.Controllers
                 var emailTemplates = await emailTemplateRepository.GetAllAsync();
                 return Ok(emailTemplates);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(500, "Internal server error occurred");
+                return StatusCode(500, "Internal server error occurred"+ ex.Message);
             }
         }
 

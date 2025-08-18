@@ -8,17 +8,19 @@ namespace API_TMS.Services
 {
     public class MailService : IMailService
     {
-        MailSettings Mail_Settings = null;
+        private readonly MailSettings _mailSettings;
+        
         public MailService(IOptions<MailSettings> options)
         {
-            Mail_Settings = options.Value;
+            _mailSettings = options.Value;
         }
+        
         public async Task<bool> SendMail(Mail Mail_Data)
         {
             try
             {
                 var email_Message = new MimeMessage();
-                email_Message.From.Add(new MailboxAddress(Mail_Settings.Name, Mail_Settings.EmailId));
+                email_Message.From.Add(new MailboxAddress(_mailSettings.Name, _mailSettings.EmailId));
                 email_Message.To.Add(new MailboxAddress(Mail_Data.EmailToName, Mail_Data.EmailToId));
                 email_Message.Subject = Mail_Data.EmailSubject;
 
@@ -26,14 +28,14 @@ namespace API_TMS.Services
                 email_Message.Body = builder.ToMessageBody();
 
                 using var client = new SmtpClient();
-                await client.ConnectAsync(Mail_Settings.Host, Mail_Settings.Port, Mail_Settings.UseSSL);
-                await client.AuthenticateAsync(Mail_Settings.UserName, Mail_Settings.Password);
+                await client.ConnectAsync(_mailSettings.Host, _mailSettings.Port, _mailSettings.UseSSL);
+                await client.AuthenticateAsync(_mailSettings.UserName, _mailSettings.Password);
                 await client.SendAsync(email_Message);
                 await client.DisconnectAsync(true);
 
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // log ex.Message
                 return false;
