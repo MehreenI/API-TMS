@@ -20,9 +20,8 @@ namespace API_TMS.Models
         [EmailAddress(ErrorMessage = "Invalid email format.")]
         public required string Email { get; set; }
 
-        [Required]
         [StringLength(255)]
-        public required string Password { get; set; }
+        public  string? Password { get; set; }
 
         [Required]
         [Phone]

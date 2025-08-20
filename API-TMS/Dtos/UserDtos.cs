@@ -5,6 +5,7 @@ namespace API_TMS.Dtos
 {
     public class CreateUserDto
     {
+
         [Required]
         [MaxLength(100)]
         public required string FirstName { get; set; }
@@ -27,6 +28,8 @@ namespace API_TMS.Dtos
 
     public class UpdateUserDto
     {
+        public int Id;
+
         [MaxLength(100)]
         public string? FirstName { get; set; }
 
@@ -45,6 +48,24 @@ namespace API_TMS.Dtos
 
         public string? ProfileImagePath { get; set; }
 
+        public string? Password { get; set; }
+        public DateTime? LastLogin { get; set; }
+    }
+
+    public class UpdateProfileDto
+    {
+        [MaxLength(100)]
+        public string? FirstName { get; set; }
+
+        [MaxLength(100)]
+        public string? LastName { get; set; }
+
+        [Phone]
+        public string? PhoneNumber { get; set; }
+
+        public DateTime? DateOfBirth { get; set; }
+
+        public string? ProfileImagePath { get; set; }
         public string? Password { get; set; }
     }
 
@@ -76,12 +97,21 @@ namespace API_TMS.Dtos
 
     public class CurrentUserDto
     {
+        public int Id { get; set; }
         public string FirstName { get; set; } = "";
         public string LastName { get; set; } = "";
         public string Email { get; set; } = "";
         public string PhoneNumber { get; set; } = "";
         public DateTime? DateOfBirth { get; set; }
         public string? ProfileImagePath { get; set; }
+        public string Role { get; set; }
     }
-
+    public class UserResponseDto
+    {
+        public required int Id { get; set; }
+        public required string FullName { get; set; }
+        public required string Email { get; set; }
+        public required string Role { get; set; }
+      ]
+    }
 }

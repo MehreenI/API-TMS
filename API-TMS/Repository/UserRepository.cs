@@ -50,6 +50,7 @@ namespace API_TMS.Repository
             {
                 return await _context.Users
                     .Include(u => u.Tasks)
+                    .Where(u => u.Role != "Admin")
                     .ToListAsync();
             }
             catch (Exception)
@@ -80,7 +81,35 @@ namespace API_TMS.Repository
                 if (existingUser == null)
                     return null;
 
-                _context.Entry(existingUser).CurrentValues.SetValues(user);
+                // Only update properties that have values (not null or empty)
+                if (!string.IsNullOrWhiteSpace(user.FirstName))
+                    existingUser.FirstName = user.FirstName;
+
+                if (!string.IsNullOrWhiteSpace(user.LastName))
+                    existingUser.LastName = user.LastName;
+
+                if (!string.IsNullOrWhiteSpace(user.Email))
+                    existingUser.Email = user.Email;
+
+                if (!string.IsNullOrWhiteSpace(user.PhoneNumber))
+                    existingUser.PhoneNumber = user.PhoneNumber;
+
+                if (!string.IsNullOrWhiteSpace(user.Role))
+                    existingUser.Role = user.Role;
+
+                
+
+                if (!string.IsNullOrWhiteSpace(user.ProfileImagePath))
+                    existingUser.ProfileImagePath = user.ProfileImagePath;
+
+                // For DateTime properties, check if they're not default values
+                if (user.CreatedAt != default(DateTime))
+                    existingUser.CreatedAt = user.CreatedAt;
+
+                if (user.LastLogin.HasValue)
+                    existingUser.LastLogin = user.LastLogin;
+
+
                 await _context.SaveChangesAsync();
                 return existingUser;
             }

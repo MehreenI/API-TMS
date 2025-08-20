@@ -11,8 +11,7 @@ namespace API_TMS.Data
 
         public DbSet<User> Users { get; set; }
         public DbSet<TaskItem> TaskItems { get; set; }
-        public DbSet<Announcement> Announcements { get; set; }
-        public DbSet<EmailTemplate> EmailTemplates { get; set; }
+        
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -47,21 +46,7 @@ namespace API_TMS.Data
                     .OnDelete(DeleteBehavior.SetNull);
             });
 
-            modelBuilder.Entity<Announcement>(entity =>
-                {   
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Subject).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Body).IsRequired();
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
-            });
-
-            modelBuilder.Entity<EmailTemplate>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.TemplateName).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.Subject).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Body).IsRequired();
-            });
+            
         }
     }
 }

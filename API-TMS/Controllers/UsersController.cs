@@ -24,6 +24,50 @@ namespace API_TMS.Controllers
             _notificationService = notificationService;
         }
 
+        [HttpPut("me")]
+        [Authorize]
+        public async Task<ActionResult<CurrentUserDto>> UpdateMyProfile([FromBody] UpdateProfileDto request)
+        {
+            var email = User?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+            if (string.IsNullOrEmpty(email))
+                return Unauthorized();
+
+            var user = await _userRepository.GetByEmailAsync(email);
+            if (user == null)
+                return NotFound();
+
+            if (!string.IsNullOrWhiteSpace(request.FirstName)) user.FirstName = request.FirstName;
+            if (!string.IsNullOrWhiteSpace(request.LastName)) user.LastName = request.LastName;
+            if (!string.IsNullOrWhiteSpace(request.PhoneNumber)) user.PhoneNumber = request.PhoneNumber;
+            if (request.DateOfBirth.HasValue) user.DateOfBirth = request.DateOfBirth;
+            if (!string.IsNullOrWhiteSpace(request.ProfileImagePath)) user.ProfileImagePath = request.ProfileImagePath;
+
+            var updated = await _userRepository.UpdateAsync(user);
+
+            if (!string.IsNullOrWhiteSpace(request.Password))
+            {
+                var hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
+                await _userRepository.UpdatePasswordAsync(user.Id, hashedPassword);
+
+            }
+            if (updated == null)
+                return NotFound();
+
+            var dto = new CurrentUserDto
+            {
+                Id = updated.Id,
+                FirstName = updated.FirstName,
+                LastName = updated.LastName,
+                Email = updated.Email,
+                PhoneNumber = updated.PhoneNumber,
+                DateOfBirth = updated.DateOfBirth,
+                ProfileImagePath = updated.ProfileImagePath,
+                Role = updated.Role
+            };
+
+            return Ok(dto);
+        }
+
         [HttpGet("me")]
         [Authorize]
         public async Task<ActionResult<CurrentUserDto>> GetMe()
@@ -38,12 +82,14 @@ namespace API_TMS.Controllers
 
             var dto = new CurrentUserDto
             {
+                Id = user.Id,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Email = user.Email,
                 PhoneNumber = user.PhoneNumber,
                 DateOfBirth = user.DateOfBirth,
-                ProfileImagePath = user.ProfileImagePath
+                ProfileImagePath = user.ProfileImagePath,
+                Role = user.Role
             };
 
             return Ok(dto);
