@@ -23,8 +23,7 @@ namespace API_TMS.Services
                 var hoursRemaining = (int)timeRemaining.TotalHours;
                 var isOverdue = timeRemaining < TimeSpan.Zero;
 
-                // Determine notification style based on type
-                var (subjectPrefix, backgroundColor, borderColor, emoji) = GetNotificationStyle(notificationType, isOverdue, hoursRemaining);
+                var (subjectPrefix, alertColor, priorityIcon) = GetNotificationStyle(notificationType, isOverdue, hoursRemaining);
 
                 var mailData = new Mail
                 {
@@ -32,28 +31,111 @@ namespace API_TMS.Services
                     EmailToName = task.AssignedUser.FullName,
                     EmailSubject = $"{subjectPrefix}: {task.Title}",
                     EmailBody = $@"
-                        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                            <h2 style='color: {borderColor};'>{emoji} Task Deadline Alert</h2>
-                            <p>Hello {task.AssignedUser.FullName},</p>
-                            <p>This is a reminder that your task <strong>'{task.Title}'</strong> is due soon.</p>
-                            
-                            <div style='background-color: {backgroundColor}; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid {borderColor};'>
-                                <h3>Task Details:</h3>
-                                <p><strong>Title:</strong> {task.Title}</p>
-                                <p><strong>Description:</strong> {task.Description}</p>
-                                <p><strong>Priority:</strong> {task.Priority}</p>
-                                <p><strong>Status:</strong> {task.Status}</p>
-                                <p><strong>Deadline:</strong> {task.Deadline:MMM dd, yyyy 'at' HH:mm}</p>
-                                <p><strong>Time Remaining:</strong> {(isOverdue ? "OVERDUE" : $"{hoursRemaining} hours")}</p>
-                            </div>
-                            
-                            <p>Please ensure this task is completed before the deadline.</p>
-                            <p>Best regards,<br/>TaskFlow Pro Team</p>
-                        </div>"
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset='UTF-8'>
+                            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                            <title>Task Deadline Alert - Taskify</title>
+                        </head>
+                        <body style='margin: 0; padding: 0; background-color: #f5f5f5; font-family: Arial, Helvetica, sans-serif;'>
+                            <table width='100%' cellpadding='0' cellspacing='0' style='background-color: #f5f5f5; padding: 20px 0;'>
+                                <tr>
+                                    <td align='center'>
+                                        <table width='600' cellpadding='0' cellspacing='0' style='background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden;'>
+                                            
+                                            <!-- Header -->
+                                            <tr>
+                                                <td style='background-color: #dc2626; padding: 30px 40px; text-align: center;'>
+                                                    <h1 style='color: #ffffff; margin: 0; font-size: 28px; font-weight: bold; letter-spacing: 1px;'>TASKIFY</h1>
+                                                    <p style='color: #fecaca; margin: 8px 0 0 0; font-size: 14px; font-weight: 500;'>Professional Task Management System</p>
+                                                </td>
+                                            </tr>
+                                            
+                                            <!-- Content -->
+                                            <tr>
+                                                <td style='padding: 40px;'>
+                                                    <div style='text-align: center; margin-bottom: 30px;'>
+                                                        <div style='background-color: {alertColor}; color: #ffffff; padding: 12px 24px; border-radius: 25px; display: inline-block; font-weight: bold; font-size: 16px;'>
+                                                            {priorityIcon} Task Deadline Alert
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <h2 style='color: #1f2937; margin: 0 0 20px 0; font-size: 24px;'>Hello {task.AssignedUser.FullName},</h2>
+                                                    
+                                                    <p style='color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;'>
+                                                        This is an important reminder regarding your assigned task. Please review the details below and take necessary action.
+                                                    </p>
+                                                    
+                                                    <!-- Task Details Card -->
+                                                    <table width='100%' cellpadding='0' cellspacing='0' style='background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; margin: 25px 0;'>
+                                                        <tr>
+                                                            <td style='padding: 25px;'>
+                                                                <h3 style='color: #111827; margin: 0 0 20px 0; font-size: 18px; font-weight: bold; border-bottom: 2px solid #dc2626; padding-bottom: 10px;'>Task Details</h3>
+                                                                
+                                                                <table width='100%' cellpadding='8' cellspacing='0'>
+                                                                    <tr>
+                                                                        <td style='color: #374151; font-weight: bold; width: 120px; vertical-align: top;'>Title:</td>
+                                                                        <td style='color: #1f2937; font-weight: 600;'>{task.Title}</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td style='color: #374151; font-weight: bold; vertical-align: top;'>Description:</td>
+                                                                        <td style='color: #4b5563; line-height: 1.5;'>{task.Description}</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td style='color: #374151; font-weight: bold;'>Priority:</td>
+                                                                        <td style='color: #dc2626; font-weight: bold;'>{task.Priority}</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td style='color: #374151; font-weight: bold;'>Status:</td>
+                                                                        <td style='color: #059669; font-weight: 600;'>{task.Status}</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td style='color: #374151; font-weight: bold;'>Deadline:</td>
+                                                                        <td style='color: #dc2626; font-weight: bold; font-size: 16px;'>{task.Deadline:MMMM dd, yyyy 'at' HH:mm}</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td style='color: #374151; font-weight: bold;'>Time Status:</td>
+                                                                        <td style='color: {(isOverdue ? "#dc2626" : "#059669")}; font-weight: bold; font-size: 16px;'>{(isOverdue ? "⚠️ OVERDUE" : $"✅ {hoursRemaining} hours remaining")}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                    
+                                                    <div style='background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 15px; margin: 25px 0;'>
+                                                        <p style='margin: 0; color: #92400e; font-weight: 600; font-size: 14px;'>
+                                                            <strong>⚠️ Action Required:</strong> Please ensure this task is completed before the deadline to maintain project timeline.
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    <p style='color: #4b5563; font-size: 16px; line-height: 1.6; margin: 25px 0 0 0;'>
+                                                        Thank you for your attention to this matter. If you have any questions or need assistance, please contact our support team.
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                            
+                                            <!-- Footer -->
+                                            <tr>
+                                                <td style='background-color: #111827; padding: 30px 40px; text-align: center;'>
+                                                    <h3 style='color: #ffffff; margin: 0 0 10px 0; font-size: 18px;'>Best Regards,</h3>
+                                                    <p style='color: #d1d5db; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;'>Taskify Team</p>
+                                                    <div style='border-top: 1px solid #374151; padding-top: 15px; margin-top: 15px;'>
+                                                        <p style='color: #9ca3af; margin: 0; font-size: 14px;'>Support: mehreenm.imran27@gmail.com</p>
+                                                        <p style='color: #6b7280; margin: 5px 0 0 0; font-size: 12px;'>© 2025 Taskify. All rights reserved.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </body>
+                        </html>"
                 };
 
                 await _mailService.SendMail(mailData);
-                _logger.LogInformation("Deadline notification ({Type}) sent for task {TaskId} to {Email}", 
+                _logger.LogInformation("Deadline notification ({Type}) sent for task {TaskId} to {Email}",
                     notificationType, task.Id, task.AssignedUser.Email);
             }
             catch (Exception ex)
@@ -62,32 +144,28 @@ namespace API_TMS.Services
             }
         }
 
-        private (string subject, string backgroundColor, string borderColor, string emoji) GetNotificationStyle(string notificationType, bool isOverdue, int hoursRemaining)
+        private (string subject, string alertColor, string icon) GetNotificationStyle(string notificationType, bool isOverdue, int hoursRemaining)
         {
             return notificationType switch
             {
                 "critical" => (
-                    $"🚨 CRITICAL: Task is overdue!",
-                    "#ffebee",
-                    "#d32f2f",
+                    "🚨 CRITICAL ALERT",
+                    "#dc2626",
                     "🚨"
                 ),
                 "urgent" => (
-                    $"⚠️ URGENT: Task due in {hoursRemaining} hours!",
-                    "#fff3e0",
-                    "#f57c00",
+                    "⚠️ URGENT NOTICE",
+                    "#ea580c",
                     "⚠️"
                 ),
                 "early" => (
-                    $"📅 Reminder: Task due in {hoursRemaining} hours",
-                    "#e8f5e8",
-                    "#388e3c",
+                    "📅 EARLY REMINDER",
+                    "#059669",
                     "📅"
                 ),
                 _ => (
-                    $"Task Deadline Alert",
-                    "#f5f5f5",
-                    "#757575",
+                    "📋 TASK REMINDER",
+                    "#4f46e5",
                     "📋"
                 )
             };
@@ -103,29 +181,109 @@ namespace API_TMS.Services
                 {
                     EmailToId = task.AssignedUser.Email,
                     EmailToName = task.AssignedUser.FullName,
-                    EmailSubject = $"New Task Assigned: {task.Title}",
+                    EmailSubject = $"New Task Assignment - {task.Title}",
                     EmailBody = $@"
-                        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                            <h2 style='color: #1976d2;'>📋 New Task Assignment</h2>
-                            <p>Hello {task.AssignedUser.FullName},</p>
-                            <p>A new task has been assigned to you.</p>
-                            
-                            <div style='background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;'>
-                                <h3>Task Details:</h3>
-                                <p><strong>Title:</strong> {task.Title}</p>
-                                <p><strong>Description:</strong> {task.Description}</p>
-                                <p><strong>Priority:</strong> {task.Priority}</p>
-                                <p><strong>Deadline:</strong> {task.Deadline:MMM dd, yyyy 'at' HH:mm}</p>
-                                <p><strong>Status:</strong> {task.Status}</p>
-                            </div>
-                            
-                            <p>Please review the task details and update the status as you progress.</p>
-                            <p>Best regards,<br/>TaskFlow Pro Team</p>
-                        </div>"
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset='UTF-8'>
+                            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                            <title>New Task Assignment - Taskify</title>
+                        </head>
+                        <body style='margin: 0; padding: 0; background-color: #f5f5f5; font-family: Arial, Helvetica, sans-serif;'>
+                            <table width='100%' cellpadding='0' cellspacing='0' style='background-color: #f5f5f5; padding: 20px 0;'>
+                                <tr>
+                                    <td align='center'>
+                                        <table width='600' cellpadding='0' cellspacing='0' style='background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden;'>
+                                            
+                                            <!-- Header -->
+                                            <tr>
+                                                <td style='background-color: #dc2626; padding: 30px 40px; text-align: center;'>
+                                                    <h1 style='color: #ffffff; margin: 0; font-size: 28px; font-weight: bold; letter-spacing: 1px;'>TASKIFY</h1>
+                                                    <p style='color: #fecaca; margin: 8px 0 0 0; font-size: 14px; font-weight: 500;'>Professional Task Management System</p>
+                                                </td>
+                                            </tr>
+                                            
+                                            <!-- Content -->
+                                            <tr>
+                                                <td style='padding: 40px;'>
+                                                    <div style='text-align: center; margin-bottom: 30px;'>
+                                                        <div style='background-color: #059669; color: #ffffff; padding: 12px 24px; border-radius: 25px; display: inline-block; font-weight: bold; font-size: 16px;'>
+                                                            📋 New Task Assignment
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <h2 style='color: #1f2937; margin: 0 0 20px 0; font-size: 24px;'>Hello {task.AssignedUser.FullName},</h2>
+                                                    
+                                                    <p style='color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;'>
+                                                        A new task has been assigned to you in Taskify. Please review the task details below and begin working on it at your earliest convenience.
+                                                    </p>
+                                                    
+                                                    <!-- Task Details Card -->
+                                                    <table width='100%' cellpadding='0' cellspacing='0' style='background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; margin: 25px 0;'>
+                                                        <tr>
+                                                            <td style='padding: 25px;'>
+                                                                <h3 style='color: #111827; margin: 0 0 20px 0; font-size: 18px; font-weight: bold; border-bottom: 2px solid #dc2626; padding-bottom: 10px;'>Task Assignment Details</h3>
+                                                                
+                                                                <table width='100%' cellpadding='8' cellspacing='0'>
+                                                                    <tr>
+                                                                        <td style='color: #374151; font-weight: bold; width: 120px; vertical-align: top;'>Task Title:</td>
+                                                                        <td style='color: #1f2937; font-weight: 600; font-size: 16px;'>{task.Title}</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td style='color: #374151; font-weight: bold; vertical-align: top;'>Description:</td>
+                                                                        <td style='color: #4b5563; line-height: 1.5;'>{task.Description}</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td style='color: #374151; font-weight: bold;'>Priority Level:</td>
+                                                                        <td style='color: #dc2626; font-weight: bold;'>{task.Priority}</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td style='color: #374151; font-weight: bold;'>Current Status:</td>
+                                                                        <td style='color: #059669; font-weight: 600;'>{task.Status}</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td style='color: #374151; font-weight: bold;'>Due Date:</td>
+                                                                        <td style='color: #dc2626; font-weight: bold; font-size: 16px;'>{task.Deadline:MMMM dd, yyyy 'at' HH:mm}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                    
+                                                    <div style='background-color: #dbeafe; border: 1px solid #3b82f6; border-radius: 6px; padding: 15px; margin: 25px 0;'>
+                                                        <p style='margin: 0; color: #1e40af; font-weight: 600; font-size: 14px;'>
+                                                            <strong>📝 Next Steps:</strong> Please review the task requirements and update the status as you progress through completion.
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    <p style='color: #4b5563; font-size: 16px; line-height: 1.6; margin: 25px 0 0 0;'>
+                                                        If you have any questions about this assignment or need additional resources, please don't hesitate to reach out to our support team.
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                            
+                                            <!-- Footer -->
+                                            <tr>
+                                                <td style='background-color: #111827; padding: 30px 40px; text-align: center;'>
+                                                    <h3 style='color: #ffffff; margin: 0 0 10px 0; font-size: 18px;'>Best Regards,</h3>
+                                                    <p style='color: #d1d5db; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;'>Taskify Team</p>
+                                                    <div style='border-top: 1px solid #374151; padding-top: 15px; margin-top: 15px;'>
+                                                        <p style='color: #9ca3af; margin: 0; font-size: 14px;'>Support: mehreenm.imran27@gmail.com</p>
+                                                        <p style='color: #6b7280; margin: 5px 0 0 0; font-size: 12px;'>© 2025 Taskify. All rights reserved.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </body>
+                        </html>"
                 };
 
                 await _mailService.SendMail(mailData);
-                _logger.LogInformation("Assignment notification sent for task {TaskId} to {Email}", 
+                _logger.LogInformation("Assignment notification sent for task {TaskId} to {Email}",
                     task.Id, task.AssignedUser.Email);
             }
             catch (Exception ex)
@@ -142,27 +300,104 @@ namespace API_TMS.Services
                 {
                     EmailToId = user.Email,
                     EmailToName = user.FullName,
-                    EmailSubject = "Welcome to TaskFlow Pro",
+                    EmailSubject = "Welcome to Taskify - Your Account is Ready!",
                     EmailBody = $@"
-                        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                            <h2 style='color: #388e3c;'>🎉 Welcome to TaskFlow Pro!</h2>
-                            <p>Hello {user.FullName},</p>
-                            <p>Your account has been created successfully. Welcome to our Task Management System!</p>
-                            
-                            <div style='background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;'>
-                                <h3>Account Details:</h3>
-                                <p><strong>Email:</strong> {user.Email}</p>
-                                <p><strong>Role:</strong> {user.Role}</p>
-                                <p><strong>Temporary Password:</strong> {tempPassword}</p>
-                            </div>
-                            
-                            <div style='background-color: #fff3e0; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ff9800;'>
-                                <p><strong>⚠️ Important:</strong> Please change your password after your first login for security purposes.</p>
-                            </div>
-                            
-                            <p>You can now log in to the system and start managing your tasks.</p>
-                            <p>Best regards,<br/>TaskFlow Pro Team</p>
-                        </div>"
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset='UTF-8'>
+                            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                            <title>Welcome to Taskify</title>
+                        </head>
+                        <body style='margin: 0; padding: 0; background-color: #f5f5f5; font-family: Arial, Helvetica, sans-serif;'>
+                            <table width='100%' cellpadding='0' cellspacing='0' style='background-color: #f5f5f5; padding: 20px 0;'>
+                                <tr>
+                                    <td align='center'>
+                                        <table width='600' cellpadding='0' cellspacing='0' style='background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden;'>
+                                            
+                                            <!-- Header -->
+                                            <tr>
+                                                <td style='background-color: #dc2626; padding: 30px 40px; text-align: center;'>
+                                                    <h1 style='color: #ffffff; margin: 0; font-size: 28px; font-weight: bold; letter-spacing: 1px;'>TASKIFY</h1>
+                                                    <p style='color: #fecaca; margin: 8px 0 0 0; font-size: 14px; font-weight: 500;'>Professional Task Management System</p>
+                                                </td>
+                                            </tr>
+                                            
+                                            <!-- Content -->
+                                            <tr>
+                                                <td style='padding: 40px;'>
+                                                    <div style='text-align: center; margin-bottom: 30px;'>
+                                                        <div style='background-color: #059669; color: #ffffff; padding: 12px 24px; border-radius: 25px; display: inline-block; font-weight: bold; font-size: 16px;'>
+                                                            🎉 Welcome to Taskify!
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <h2 style='color: #1f2937; margin: 0 0 20px 0; font-size: 24px;'>Hello {user.FullName},</h2>
+                                                    
+                                                    <p style='color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;'>
+                                                        Congratulations! Your Taskify account has been successfully created. We're excited to have you join our professional task management platform.
+                                                    </p>
+                                                    
+                                                    <!-- Account Details Card -->
+                                                    <table width='100%' cellpadding='0' cellspacing='0' style='background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; margin: 25px 0;'>
+                                                        <tr>
+                                                            <td style='padding: 25px;'>
+                                                                <h3 style='color: #111827; margin: 0 0 20px 0; font-size: 18px; font-weight: bold; border-bottom: 2px solid #dc2626; padding-bottom: 10px;'>Your Account Information</h3>
+                                                                
+                                                                <table width='100%' cellpadding='8' cellspacing='0'>
+                                                                    <tr>
+                                                                        <td style='color: #374151; font-weight: bold; width: 150px;'>Email Address:</td>
+                                                                        <td style='color: #1f2937; font-weight: 600;'>{user.Email}</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td style='color: #374151; font-weight: bold;'>User Role:</td>
+                                                                        <td style='color: #059669; font-weight: 600;'>{user.Role}</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td style='color: #374151; font-weight: bold;'>Temporary Password:</td>
+                                                                        <td style='background-color: #fef3c7; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-weight: bold; color: #92400e; font-size: 16px;'>{tempPassword}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                    
+                                                    <div style='background-color: #fef2f2; border: 1px solid #dc2626; border-radius: 6px; padding: 20px; margin: 25px 0;'>
+                                                        <h4 style='color: #dc2626; margin: 0 0 10px 0; font-size: 16px; font-weight: bold;'>🔒 Important Security Notice</h4>
+                                                        <p style='margin: 0; color: #991b1b; font-weight: 600; font-size: 14px; line-height: 1.5;'>
+                                                            For your account security, please change your temporary password immediately after your first login. Your account safety is our top priority.
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    <div style='background-color: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 6px; padding: 15px; margin: 25px 0;'>
+                                                        <p style='margin: 0; color: #0c4a6e; font-weight: 600; font-size: 14px;'>
+                                                            <strong>🚀 Getting Started:</strong> You can now log in to Taskify and start organizing your tasks efficiently with our comprehensive management tools.
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    <p style='color: #4b5563; font-size: 16px; line-height: 1.6; margin: 25px 0 0 0;'>
+                                                        Welcome aboard! If you need any assistance or have questions about using Taskify, our support team is here to help you succeed.
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                            
+                                            <!-- Footer -->
+                                            <tr>
+                                                <td style='background-color: #111827; padding: 30px 40px; text-align: center;'>
+                                                    <h3 style='color: #ffffff; margin: 0 0 10px 0; font-size: 18px;'>Best Regards,</h3>
+                                                    <p style='color: #d1d5db; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;'>Taskify Team</p>
+                                                    <div style='border-top: 1px solid #374151; padding-top: 15px; margin-top: 15px;'>
+                                                        <p style='color: #9ca3af; margin: 0; font-size: 14px;'>Support: mehreenm.imran27@gmail.com</p>
+                                                        <p style='color: #6b7280; margin: 5px 0 0 0; font-size: 12px;'>© 2025 Taskify. All rights reserved.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </body>
+                        </html>"
                 };
 
                 await _mailService.SendMail(mailData);
